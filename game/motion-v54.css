@@ -1,0 +1,24 @@
+/* v5.4: movement/attack animation for portrait and vector character artwork */
+.arena{perspective:700px; background:radial-gradient(circle at 50% 40%,#4c4a59 0%,#252436 80%);padding:5px;border-radius:18px;box-shadow:0 18px 45px #03040a99,inset 0 0 0 2px #70617c}
+.tile{background:repeating-linear-gradient(28deg,transparent 0 13px,#ffffff05 13px 15px),linear-gradient(150deg,#484555,#252738);border:1px solid #6c6475;box-shadow:inset 1px 1px #ffffff12,inset -2px -2px #0007;overflow:hidden}
+.tile:not(.wall):not(.enemy):not(.hero):not(.ally):not(.cache):after{content:'';position:absolute;inset:8%;border:1px solid #ffffff08;border-radius:40%;pointer-events:none}
+.tile.hero,.tile.ally,.tile.enemy{overflow:visible;z-index:2}
+.unit-sprite{transform-origin:50% 88%;animation:nb-idle 2.3s ease-in-out infinite;filter:drop-shadow(0 6px 4px #0009)}
+.tile.hero .unit-sprite{animation:nb-idle 2.3s ease-in-out infinite,nb-enter .28s ease-out}
+.tile.ally .unit-sprite{animation:nb-idle 2.8s ease-in-out infinite}
+.tile.enemy .unit-sprite{animation:nb-idle 2.1s ease-in-out infinite reverse}
+.tile.unit-cast .unit-sprite{animation:nb-cast .5s cubic-bezier(.2,.7,.2,1) both}
+.tile.unit-hit .unit-sprite{animation:nb-hit .42s ease both}
+.tile.hero small,.tile.enemy small,.tile.ally small{background:#090b1bc9;padding:1px 3px;border-radius:4px;z-index:3}
+@keyframes nb-idle{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
+@keyframes nb-enter{from{opacity:.45;transform:translateY(13px) scale(.85)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes nb-cast{0%{transform:translateX(0) rotate(0)}35%{transform:translateX(10px) rotate(7deg) scale(1.12)}70%{transform:translateX(-4px) rotate(-3deg)}100%{transform:translateX(0)}}
+@keyframes nb-hit{0%,100%{filter:brightness(1)}30%{transform:translateX(6px) rotate(8deg);filter:brightness(2) sepia(1)}60%{transform:translateX(-5px) rotate(-5deg)}}
+@media(prefers-reduced-motion:reduce){.unit-sprite,.tile.hero .unit-sprite,.tile.ally .unit-sprite,.tile.enemy .unit-sprite,.tile.unit-cast .unit-sprite,.tile.unit-hit .unit-sprite{animation:none!important}}
+
+/* v5.9: clearer walk and attack feedback on larger maps */
+.tile.unit-walk .unit-sprite{animation:nb-walk .32s ease both}
+@keyframes nb-walk{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-5px) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+.tile.hero.unit-walk{background:#3a5578;border-color:#b8e4ff}
+.arena[style*="--map-size: 9"] .tile,.arena[style*="--map-size:11"] .tile{font-size:clamp(10px,3.2vw,20px)}
+.arena[style*="--map-size: 9"] .tile small,.arena[style*="--map-size:11"] .tile small{font-size:clamp(6px,1.4vw,10px)}

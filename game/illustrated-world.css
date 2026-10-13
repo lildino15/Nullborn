@@ -1,0 +1,21 @@
+/* v4.6: restore storybook fantasy direction without altering game logic */
+body:has(.arena){background:linear-gradient(#080e1ad9,#080e1af5),url('/cover.svg') center top/cover fixed!important}
+body:has(.arena) .arena{isolation:isolate;background:linear-gradient(145deg,#15233777,#0c1420b0),url('/dungeon-scene.svg') center/cover!important;border:5px ridge #a18c70!important;border-radius:18px!important;box-shadow:inset 0 0 90px #040913,0 0 0 3px #131f30,0 24px 70px #000b!important}
+body:has(.arena) .arena:before{background:radial-gradient(ellipse at center,#a2c7d71a,transparent 75%);z-index:0}
+body:has(.arena) .arena .tile{position:relative;z-index:1;background:linear-gradient(150deg,#8395a00c,#08101b28)!important;border:1px solid #b9cad72b!important;box-shadow:inset 0 1px 1px #ffffff17!important;transition:background .2s,border-color .2s,box-shadow .2s}
+body:has(.arena) .arena .tile.hero{border:2px solid #8dd9ff!important;box-shadow:0 0 13px #57c4f87a,inset 0 0 14px #81d7ff33!important}
+body:has(.arena) .arena .tile.ally{border:2px solid #94d6ac!important;box-shadow:0 0 9px #68c99e4c!important}
+body:has(.arena) .arena .tile.enemy{border:2px solid #df8a7b!important;box-shadow:0 0 9px #c765644b!important}
+body:has(.arena) .arena .tile.selected{outline:3px solid #ffe6a7!important;outline-offset:-3px}
+body:has(.arena) .arena .tile.moveable{background:#68bcf129!important;border:1px dashed #9ee6ff!important}
+body:has(.arena) .arena .tile .unit-sprite{height:94%;width:120%;filter:drop-shadow(0 5px 2px #000d) drop-shadow(0 0 7px #accce666)}
+body:has(.arena) .arena .tile small{font-family:Georgia,serif;letter-spacing:.02em;background:#0a1021ee;border:1px solid #b7a27899;color:#fff2d4}
+.nb-hero{background-image:linear-gradient(90deg,#0b1428e9,#0b142891),url('/cover.svg')!important;background-size:cover!important;background-position:center!important}
+.nb-hero h1,.nb-hero h2{font-family:Georgia,'Times New Roman',serif!important;letter-spacing:.035em;text-shadow:0 3px 12px #000}
+.panel{border-color:#8b7b6457!important;box-shadow:inset 0 1px 0 #ffffff0b,0 9px 25px #0003}
+.fantasy-portrait{width:66px;height:76px;object-fit:contain;border:2px solid #b9a37c;border-radius:9px;background:radial-gradient(circle at 50% 28%,#46577a,#131d30 75%);filter:drop-shadow(0 4px 4px #0006)}
+.fantasy-cast{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0;padding:12px;background:#111b2ad9;border:1px solid #8f806066;border-radius:14px}
+.fantasy-cast figcaption{font:small-caps 13px Georgia,serif;color:#f1ddb0;text-align:center}
+.fantasy-cast figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+@media(max-width:450px){.fantasy-portrait{width:56px;height:65px}.fantasy-cast{justify-content:space-around;gap:7px}}
+@media(prefers-reduced-motion:reduce){.arena .unit-sprite{animation:none!important}.arena .tile{transition:none!important}}
