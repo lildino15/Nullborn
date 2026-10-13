@@ -125,6 +125,23 @@ const RECRUIT_STYLE={
   Orin:{img:'/art/hub/hub-kael.webp',bio:'A keen-eyed ranger. Deadly at range, quiet in camp.',stars:4},
   Selene:{img:'/art/hub/hub-lyra.webp',bio:'A gentle healer. Mends wounds and lifts hearts.',stars:4}
 };
+// Full-body battle sprites (2D figures, not portraits)
+const SPR='/art/sprites/';
+const ALLY_SPRITES={Rin:SPR+'spr-rin.webp',Orin:SPR+'spr-orin.webp',Selene:SPR+'spr-selene.webp'};
+const HERO_SPRITE=SPR+'spr-rook.webp';
+const WALL_TILES=[SPR+'tile-rock.webp',SPR+'tile-wall.webp',SPR+'tile-rock2.webp'];
+function foeSprite(name){
+  const n=String(name||'').toLowerCase();
+  if(/wolf|matriarch|rat/.test(n))return SPR+'spr-wolf.webp';
+  if(/goblin|imp/.test(n))return SPR+'spr-goblin.webp';
+  if(/slime/.test(n))return SPR+'spr-slime.webp';
+  if(/bat/.test(n))return SPR+'spr-bat.webp';
+  if(/spider|broodmother|beetle/.test(n))return SPR+'spr-spider.webp';
+  if(/wisp/.test(n))return SPR+'spr-wisp.webp';
+  if(/skeleton|revenant|undead/.test(n))return SPR+'spr-skeleton.webp';
+  if(/golem|sentinel|construct/.test(n))return SPR+'spr-golem.webp';
+  return SPR+'spr-wolf.webp';
+}
 async function openRecruit(){
   show('screen-recruit');
   const list=$('#recruit-list');list.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading guild roster…</p>';
@@ -358,16 +375,17 @@ function renderBattle(){
   for(let y=0;y<N;y++)for(let x=0;x<N;x++){
     const k=x+','+y,o=occ.get(k),w=walls.has(k);
     let cls='cell'+(w?' wall':'')+(mv.has(k)?' move-hl':'');
+    let cellStyle=w?' style="background-image:url(\''+WALL_TILES[(x*3+y*7)%3]+'\');background-size:cover"':'';
     let inner='';
     if(o){
-      if(o.kind==='hero')inner='<div class="tok hero"><img src="/art/hub/hub-rook.webp" alt="Hero"></div>';
-      else if(o.kind==='ally'){const dead=o.ref.hp<=0;inner='<div class="tok ally" style="'+(dead?'filter:grayscale(1);opacity:.5':'')+'">'+esc(o.ref.name[0])+'</div>'}
-      else if(o.kind==='foe'){inner='<div class="tok '+(o.ref.boss?'boss':'foe')+'">'+esc(o.ref.name[0])+'</div><div class="hp-mini"><i style="width:'+Math.round(100*o.ref.hp/o.ref.maxHp)+'%"></i></div>'}
+      if(o.kind==='hero')inner='<div class="tok hero sprimg"><img src="'+HERO_SPRITE+'" alt="Hero"></div>';
+      else if(o.kind==='ally'){const dead=o.ref.hp<=0;const img=ALLY_SPRITES[o.ref.name]||SPR+'spr-rin.webp';inner='<div class="tok ally sprimg" style="'+(dead?'filter:grayscale(1);opacity:.5':'')+'"><img src="'+img+'" alt="'+esc(o.ref.name)+'"></div>'}
+      else if(o.kind==='foe'){inner='<div class="tok '+(o.ref.boss?'boss':'foe')+' sprimg"><img src="'+foeSprite(o.ref.name)+'" alt="'+esc(o.ref.name)+'"></div><div class="hp-mini"><i style="width:'+Math.round(100*o.ref.hp/o.ref.maxHp)+'%"></i></div>'}
       if(H.battle.sel&&((H.battle.sel.kind==='hero'&&o.kind==='hero')||(H.battle.sel.kind!=='hero'&&o.ref&&H.battle.sel.id===o.ref.id)))cls+=' sel';
     }
     const loot=(run.loot||[]).find(l=>!l.claimed&&l.found&&l.x===x&&l.y===y);
     if(loot&&!o)inner='<div class="tok loot">✦</div>';
-    html+='<div class="'+cls+'" data-x="'+x+'" data-y="'+y+'">'+inner+'</div>';
+    html+='<div class="'+cls+'" data-x="'+x+'" data-y="'+y+'"'+cellStyle+'>'+inner+'</div>';
   }
   grid.innerHTML=html;
   grid.querySelectorAll('.cell').forEach(c=>c.addEventListener('click',()=>cellTap(run,+c.dataset.x,+c.dataset.y)));
@@ -393,6 +411,7 @@ function renderEnemyPanel(run){
   const foe=sel&&sel.kind==='foe'?(run.enemies||[]).find(e=>e.id===sel.id&&e.hp>0):null;
   if(!foe){ep.hidden=true;$('#forecast-panel').hidden=true;return}
   ep.hidden=false;
+  $('#ep-sprite').src=foeSprite(foe.name);
   $('#ep-name').textContent=(foe.boss?'👹 ':'')+foe.name;
   $('#ep-lv').textContent='Lv. '+run.floor;
   setHp('#ep-hp','#ep-hptext',foe.hp,foe.maxHp);
