@@ -50,10 +50,28 @@ function premiumPublic(rec){return {crystals:rec.crystals||0,skins:rec.premiumSk
 const MARKET_DB=path.join(DIR,'market.json');let market={orders:[],trades:[],seq:0};try{market=JSON.parse(await readFile(MARKET_DB,'utf8'))}catch(e){if(e.code!=='ENOENT')throw e}
 const MARKET_FEE_BPS=200; // 2% seller fee, rounded down in whole gold.
 market=await loadDurable('market',market);
+// One Vault: story and dungeon share a single server-side inventory (verified[email]).
+// Story loot, vendor sales, and material exchange all mutate that same record.
+// Reward tables and price lists below are server-defined; the client only sends intents.
+const MARKETABLE_MATERIALS=['Iron Fragment','Crystal Shard','Rat Fang','Moss Fiber','Moonstone Shard','Ancient Rune','Astral Relic'];
+const VENDOR_PRICES={'Iron Fragment':4,'Crystal Shard':10,'Rat Fang':2,'Moss Fiber':2,'Moonstone Shard':6,'Ancient Rune':25,'Astral Relic':60};
+const WEAPON_SELL_BASE={'Rusty Dagger':8,'Ironfang Blade':20,'Runebound Saber':45};
+function weaponSellValue(w){return (WEAPON_SELL_BASE[w.name]||10)+(w.upgrade||0)*3;}
+function grantWeapon(rec,name,atk){rec.weapons??=[];const w={id:token(),name,atk,upgrade:0};rec.weapons.push(w);return w;}
+// One-time story loot. `key` guards replays; `loot` is server-defined. Returns note lines.
+function grantStoryLoot(rec,key,loot){
+ rec.lootGranted??={};if(rec.lootGranted[key])return [];
+ rec.lootGranted[key]=true;const notes=[];
+ if(loot.gold){rec.gold=(rec.gold||0)+loot.gold;notes.push(`+${loot.gold} gold`);}
+ rec.materials??={};
+ for(const [m,q] of Object.entries(loot.materials||{})){rec.materials[m]=(rec.materials[m]||0)+q;notes.push(`+${q} ${m}`);}
+ for(const w of loot.weapons||[]){grantWeapon(rec,w.name,w.atk);notes.push(`new weapon: ${w.name}`);}
+ return notes;
+}
 let marketWrites=Promise.resolve();function persistMarket(){marketWrites=marketWrites.catch(console.error).then(async()=>{let tmp=MARKET_DB+'.tmp';await writeFile(tmp,JSON.stringify(market),{mode:0o600});await rename(tmp,MARKET_DB);await writeDurable('market',market)});return marketWrites}
 let marketLock=Promise.resolve();async function marketAtomic(fn){let release;const prev=marketLock;marketLock=new Promise(r=>release=r);await prev;try{return await fn()}finally{release()}}
 function marketAccount(email){let rec=verified[email];if(!rec){rec={active:null,clears:0,gold:60,loot:[],materials:{},weapons:[],equippedId:null,companion:null,lastClear:0};verified[email]=rec}if(!rec.marketInitialized){rec.marketInitialized=true;rec.crystals=(rec.crystals||0)+200;rec.gold+=1000}return rec}
-function marketSnapshot(email){const last=market.trades.at(-1);return {simulation:true,disclaimer:'Fictional in-game trading only. No real money, token, redemption or cash-out.',lastPrice:last?.price||5,feeBps:MARKET_FEE_BPS,volume24h:market.trades.filter(t=>t.time>Date.now()-86400000).reduce((n,t)=>n+t.quantity,0),crystals:verified[email]?.crystals||0,gold:verified[email]?.gold||0,orders:market.orders.filter(o=>o.remaining>0).map(o=>({id:o.id,side:o.side,price:o.price,remaining:o.remaining,owner:o.owner===email?'you':'other'})),myOrders:market.orders.filter(o=>o.owner===email&&o.remaining>0).map(o=>({id:o.id,side:o.side,price:o.price,remaining:o.remaining})),trades:market.trades.slice(-100).reverse().map(t=>({id:t.id,price:t.price,quantity:t.quantity,time:t.time,fee:t.fee||0}))}}
+function marketSnapshot(email){const last=market.trades.at(-1);return {simulation:true,disclaimer:'Fictional in-game trading only. No real money, token, redemption or cash-out.',lastPrice:last?.price||5,feeBps:MARKET_FEE_BPS,volume24h:market.trades.filter(t=>t.time>Date.now()-86400000).reduce((n,t)=>n+t.quantity,0),crystals:verified[email]?.crystals||0,gold:verified[email]?.gold||0,materials:verified[email]?.materials||{},marketableMaterials:MARKETABLE_MATERIALS,orders:market.orders.filter(o=>o.remaining>0).map(o=>({id:o.id,side:o.side,item:o.item||'crystal',price:o.price,remaining:o.remaining,owner:o.owner===email?'you':'other'})),myOrders:market.orders.filter(o=>o.owner===email&&o.remaining>0).map(o=>({id:o.id,side:o.side,item:o.item||'crystal',price:o.price,remaining:o.remaining})),trades:market.trades.slice(-100).reverse().map(t=>({id:t.id,item:t.item||'crystal',price:t.price,quantity:t.quantity,time:t.time,fee:t.fee||0}))}}
 // Closed-loop cosmetic auction house: inventory and bids are server authoritative.
 const AUCTION_DB=path.join(DIR,'auctions.json');let auctions={listings:[],history:[]};try{auctions=JSON.parse(await readFile(AUCTION_DB,'utf8'))}catch(e){if(e.code!=='ENOENT')throw e}
 const SIGILS={moon:'Moonlit Sigil',ember:'Emberglass Sigil',rift:'Riftbound Sigil'};
@@ -81,11 +99,11 @@ http.createServer(async(req,res)=>{
  if(req.method==='GET'&&route==='/chapter2.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,'chapter2.html')));return}
  if(req.method==='GET'&&route==='/story.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,'story.html')));return}
  if(req.method==='GET'&&['/adventure.html','/common.html'].includes(route)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
- if(req.method==='GET'&&['/party.html','/character.html','/audio.js','/install.js','/sw.js','/manifest.webmanifest','/icon.svg','/theme.css','/cover.svg','/sprite-effects.css','/anime-v47.css','/illustrated-world.css','/battlefield-v45.css','/rarity-v49.css','/motion-v54.css'].includes(route)){
+ if(req.method==='GET'&&['/party.html','/character.html','/hub.html','/hub.js','/audio.js','/install.js','/sw.js','/manifest.webmanifest','/icon.svg','/theme.css','/hub.css','/cover.svg','/sprite-effects.css','/anime-v47.css','/illustrated-world.css','/battlefield-v45.css','/rarity-v49.css','/motion-v54.css'].includes(route)){
   const ext=route.split('.').pop();const type=ext==='html'?'text/html; charset=utf-8':ext==='js'?'text/javascript; charset=utf-8':ext==='svg'?'image/svg+xml':ext==='css'?'text/css; charset=utf-8':'application/manifest+json';
   res.writeHead(200,{'Content-Type':type,'Cache-Control':route==='/sw.js'?'no-cache':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return
  }
- if(req.method==='GET'&&/^\/art\/[a-z-]+\.webp$/.test(route)){res.writeHead(200,{'Content-Type':'image/webp','Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
+ if(req.method==='GET'&&/^\/art\/[a-z\-\/]+\.webp$/.test(route)){res.writeHead(200,{'Content-Type':'image/webp','Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
  if(req.method==='GET'&&/^\/sprites\/[a-z-]+\.svg$/.test(route)){res.writeHead(200,{'Content-Type':'image/svg+xml','Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
  if(req.method==='GET'&&route==='/market.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,'market.html')));return}
  if(!route.startsWith('/api/'))return reply(res,404,{error:'Not found'});
@@ -145,16 +163,26 @@ http.createServer(async(req,res)=>{
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   const choice=String(body.choice||'');
   if(!scenes[st.scene].choices.some(c=>c[0]===choice))return reply(res,409,{error:'That choice is not available'});
+  // One Vault: story scenes pay tangible loot into the shared server-side inventory.
+  const STORY_SCENE_LOOT={
+    caravan:{gold:8,materials:{'Iron Fragment':1},blurb:'The caravan captain pays you 8 gold and shares an Iron Fragment.'},
+    guild:{gold:12,materials:{},blurb:'The guild clerk issues a 12 gold stipend for your assignment.'},
+    quest:{gold:20,materials:{'Iron Fragment':2},blurb:'Chapter One complete: the guild awards 20 gold and 2 Iron Fragments.'}
+  };
+  let rewards=[];
   if(st.scene==='quest'){
     if((rec.clears||0)<=(st.questBaseline??0))return reply(res,409,{error:'Clear a verified dungeon floor after accepting the guild assignment first'});
     st.scene='complete';st.completed=true;
+    if(grantStoryLoot(rec,'story:quest',STORY_SCENE_LOOT.quest).length)rewards.push('🎁 '+STORY_SCENE_LOOT.quest.blurb);
   }else{
     const transitions={fall:'door',door:'awakening',awakening:'caravan',caravan:'guild',guild:'quest'};
     if(st.scene==='awakening')st.voiceName=choice==='muse'?'Muse':'Spark';
     if(st.scene==='guild')st.questBaseline=rec.clears||0;
+    const done=st.scene,loot=STORY_SCENE_LOOT[done];
     st.choices.push({scene:st.scene,choice});st.scene=transitions[st.scene];
+    if(loot&&grantStoryLoot(rec,'story:'+done,loot).length)rewards.push('🎁 '+loot.blurb);
   }
-  verified[auth.email]=rec;await persistRuns();return reply(res,200,output());
+  verified[auth.email]=rec;await persistRuns();return reply(res,200,{...output(),rewards});
  }
  if(route==='/api/beasts'){
   return marketAtomic(async()=>{
@@ -293,14 +321,16 @@ http.createServer(async(req,res)=>{
   if(req.method==='GET')return reply(res,200,view());
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   const choice=String(body.choice||'');
+  let rewards=[];
   if(f.stage==='threshold'&&['truth','lyra'].includes(choice)){f.choices.push(choice);f.stage='oath';if(choice==='lyra')rec.chapter2.lyraBond=Math.min(100,(rec.chapter2.lyraBond||0)+2)}
   else if(f.stage==='oath'&&['seal','remember'].includes(choice)){f.choices.push(choice);f.stage='trial'}
   else if(f.stage==='trial'&&choice==='claim'){
    if(rec.tactics?.phase!=='victory')return reply(res,409,{error:'Win the verified Three Guardians tactical battle first'});
    f.stage='complete';f.completed=true;f.ending=f.choices.includes('seal')?'Keeper of the Gate':'Bearer of the Lost Memory';
    if(!f.rewarded){rec.skillbook??={class:'nullborn',points:3,ranks:{slash:1,flame:1,pierce:1,mend:1,void:1},slots:['slash','void']};rec.skillbook.points+=3;f.rewarded=true}
+   if(grantStoryLoot(rec,'finale',{gold:50,materials:{},weapons:[{name:'Runebound Saber',atk:8}],blurb:'Epilogue: the chronicle grants a Runebound Saber and 50 gold.'}).length)rewards.push('🎁 Epilogue: the chronicle grants a Runebound Saber and 50 gold.');
   }else return reply(res,409,{error:'Choice unavailable'});
-  verified[auth.email]=rec;await persistRuns();return reply(res,200,view());
+  verified[auth.email]=rec;await persistRuns();return reply(res,200,{...view(),rewards});
  }
  if(route==='/api/chapter3'){
   const rec=verified[auth.email]||{};
@@ -311,6 +341,7 @@ http.createServer(async(req,res)=>{
   if(req.method==='GET')return reply(res,200,view());
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   const action=String(body.action||'');
+  let rewards=[];
   if(c.completed)return reply(res,409,{error:'Chapter already complete'});
   if(c.stage==='intro'){
     if(action!=='begin')return reply(res,409,{error:'Begin the encounter first'});
@@ -350,7 +381,8 @@ http.createServer(async(req,res)=>{
     if(action==='protect'){b.guardLyra=true;rec.chapter2.lyraBond=Math.min(100,(rec.chapter2.lyraBond||0)+1);c.history.push('You shield Lyra. Your bond strengthens.');}
     c.turns++;
     if(b.hp>0&&b.lyraHp>0){const bonus=(rec.chapter2.lyraBond||0)>=8?2:0;b.hp=Math.max(0,b.hp-(3+bonus));c.history.push('Lyra counters with a spark for '+(3+bonus)+' damage.');}
-    if(b.hp===0){c.stage='complete';c.completed=true;rec.sigils??={};rec.sigils.rift=(rec.sigils.rift||0)+1;c.history.push('The Bell Warden falls. You receive a Riftbound Sigil.');}
+    if(b.hp===0){c.stage='complete';c.completed=true;rec.sigils??={};rec.sigils.rift=(rec.sigils.rift||0)+1;c.history.push('The Bell Warden falls. You receive a Riftbound Sigil.');
+      if(grantStoryLoot(rec,'chapter3',{gold:0,materials:{'Crystal Shard':2},weapons:[{name:'Ironfang Blade',atk:5}],blurb:'The Warden\u2019s armory yields an Ironfang Blade and 2 Crystal Shards.'}).length)rewards.push('🎁 The Warden\u2019s armory yields an Ironfang Blade and 2 Crystal Shards.');}
     else{const hit=4+(c.turns%3);if(b.guardLyra){b.heroHp=Math.max(0,b.heroHp-Math.max(1,hit-2));c.history.push('You intercept the attack for '+Math.max(1,hit-2)+' damage.');b.guardLyra=false;}
       else if(c.turns%2===0&&b.lyraHp>0){b.lyraHp=Math.max(0,b.lyraHp-hit);c.history.push('The Warden hits Lyra for '+hit+' damage.');}
       else{b.heroHp=Math.max(0,b.heroHp-hit);c.history.push('The Warden hits you for '+hit+' damage.');}
@@ -361,7 +393,7 @@ http.createServer(async(req,res)=>{
     if(action!=='retry')return reply(res,409,{error:'Retry the encounter'});
     c.stage='intro';c.boss=null;c.history.push('Muse rewinds your tactical briefing.');
   }
-  verified[auth.email]=rec;await persistRuns();return reply(res,200,view());
+  verified[auth.email]=rec;await persistRuns();return reply(res,200,{...view(),rewards});
  }
  if(route==='/api/chapter2'){
   const rec=verified[auth.email]||{};
@@ -381,10 +413,12 @@ http.createServer(async(req,res)=>{
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   const choice=String(body.choice||'');
   if(!scenes[st.scene].choices.some(c=>c[0]===choice))return reply(res,409,{error:'Unavailable story choice'});
+  let rewards=[];
   if(st.scene==='trial'){
    if((rec.clears||0)<=(st.questBaseline??0))return reply(res,409,{error:'Complete a NEW verified dungeon clear after accepting Lyra’s trial'});
    st.scene='aftermath';st.lyraBond+=2;
-  }else if(st.scene==='aftermath'){st.scene='complete';st.completed=true;st.lyraBond+=2;}
+  }else if(st.scene==='aftermath'){st.scene='complete';st.completed=true;st.lyraBond+=2;
+   if(grantStoryLoot(rec,'chapter2',{gold:25,materials:{'Iron Fragment':3},blurb:'Chapter Two complete: Lyra shares expedition supplies — 25 gold and 3 Iron Fragments.'}).length)rewards.push('🎁 Chapter Two complete: Lyra shares expedition supplies — 25 gold and 3 Iron Fragments.');}
   else{
    if(choice==='kind'||choice==='ridge'||choice==='confide')st.lyraBond+=2;
    if(choice==='cautious'||choice==='shortcut'||choice==='secret')st.trust+=1;
@@ -392,7 +426,7 @@ http.createServer(async(req,res)=>{
    if(st.scene==='sigil')st.questBaseline=rec.clears||0;
    st.choices.push({scene:st.scene,choice});st.scene=transitions[st.scene];
   }
-  verified[auth.email]=rec;await persistRuns();return reply(res,200,output());
+  verified[auth.email]=rec;await persistRuns();return reply(res,200,{...output(),rewards});
  }
  if(route==='/api/market'){
   if(req.method==='GET')return reply(res,200,marketSnapshot(auth.email));
@@ -402,30 +436,65 @@ http.createServer(async(req,res)=>{
    if(action==='cancel'){
     const order=market.orders.find(o=>o.id===body.id&&o.owner===auth.email&&o.remaining>0);
     if(!order)return reply(res,404,{error:'Open order not found'});
-    if(order.side==='sell')rec.crystals+=order.remaining;else rec.gold+=order.remaining*order.price;
+    const citem=order.item||'crystal';
+    if(order.side==='sell'){if(citem==='crystal')rec.crystals+=order.remaining;else{rec.materials??={};rec.materials[citem]=(rec.materials[citem]||0)+order.remaining;}}
+    else rec.gold+=order.remaining*order.price;
     order.remaining=0;
    }else if(action==='place'){
     const side=body.side,qty=body.quantity,price=body.price;
+    const item=String(body.item||'crystal'),isMat=item!=='crystal';
     if(!['buy','sell'].includes(side)||!Number.isSafeInteger(qty)||qty<1||qty>1000||!Number.isSafeInteger(price)||price<1||price>1000)return reply(res,400,{error:'Quantity must be 1–1000, price 1–1000 gold'});
+    if(isMat&&!MARKETABLE_MATERIALS.includes(item))return reply(res,400,{error:'That material cannot be traded on the exchange'});
     const open=market.orders.filter(o=>o.owner===auth.email&&o.remaining>0).length;
     if(open>=10)return reply(res,409,{error:'Maximum 10 open orders'});
     const reserve=side==='buy'?qty*price:qty;
-    if(side==='buy'&&rec.gold<reserve||side==='sell'&&rec.crystals<reserve)return reply(res,409,{error:'Insufficient available balance'});
-    if(side==='buy')rec.gold-=reserve;else rec.crystals-=reserve;
-    const incoming={id:token(),owner:auth.email,side,price,remaining:qty,created:Date.now()};
-    const matches=market.orders.filter(o=>o.remaining>0&&o.side!==side&&o.owner!==auth.email&&(side==='buy'?o.price<=price:o.price>=price)).sort((a,b)=>(side==='buy'?a.price-b.price:b.price-a.price)||a.created-b.created);
+    rec.materials??={};
+    const have=side==='buy'?rec.gold:isMat?(rec.materials[item]||0):(rec.crystals||0);
+    if(have<reserve)return reply(res,409,{error:'Insufficient available balance'});
+    if(side==='buy')rec.gold-=reserve;else if(isMat)rec.materials[item]-=reserve;else rec.crystals-=reserve;
+    const incoming={id:token(),owner:auth.email,side,item,price,remaining:qty,created:Date.now()};
+    const matches=market.orders.filter(o=>o.remaining>0&&o.side!==side&&o.owner!==auth.email&&(o.item||'crystal')===item&&(side==='buy'?o.price<=price:o.price>=price)).sort((a,b)=>(side==='buy'?a.price-b.price:b.price-a.price)||a.created-b.created);
     for(const other of matches){if(!incoming.remaining)break;const units=Math.min(incoming.remaining,other.remaining),executionPrice=other.price,buyer=side==='buy'?rec:marketAccount(other.owner),seller=side==='sell'?rec:marketAccount(other.owner);
-      buyer.crystals+=units;const gross=units*executionPrice,fee=Math.floor(gross*MARKET_FEE_BPS/10000);seller.gold+=gross-fee;market.feesCollected=(market.feesCollected||0)+fee;
+      if(isMat){buyer.materials??={};buyer.materials[item]=(buyer.materials[item]||0)+units;}else buyer.crystals=(buyer.crystals||0)+units;
+      const gross=units*executionPrice,fee=Math.floor(gross*MARKET_FEE_BPS/10000);seller.gold=(seller.gold||0)+gross-fee;market.feesCollected=(market.feesCollected||0)+fee;
       // Buy escrow is held at limit price, return difference to buyer.
       if(side==='buy')buyer.gold+=units*(price-executionPrice);
       else buyer.gold+=units*(other.price-executionPrice);
       incoming.remaining-=units;other.remaining-=units;
-      market.trades.push({id:++market.seq,price:executionPrice,quantity:units,fee,time:Date.now()});
+      market.trades.push({id:++market.seq,item,price:executionPrice,quantity:units,fee,time:Date.now()});
     }
     if(incoming.remaining)market.orders.push(incoming);
     if(market.trades.length>500)market.trades=market.trades.slice(-500);
    }else return reply(res,400,{error:'Unknown market action'});
    await persistRuns();await persistMarket();return reply(res,200,marketSnapshot(auth.email));
+  });
+ }
+ if(route==='/api/vendor'){
+  // Instant sale of materials and spare weapons for gold. Prices are server-defined.
+  let rec=verified[auth.email]||{gold:60,materials:{},weapons:[],equippedId:null};
+  const view=()=>({gold:rec.gold||0,materials:rec.materials||{},weapons:(rec.weapons||[]).map(w=>({id:w.id,name:w.name,atk:w.atk,upgrade:w.upgrade||0,equipped:w.id===rec.equippedId,sellValue:weaponSellValue(w)})),prices:VENDOR_PRICES});
+  if(req.method==='GET')return reply(res,200,view());
+  if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
+  if(!guard(req,Number(process.env.NULLBORN_VENDOR_LIMIT||30)))return reply(res,429,{error:'The vendor is busy. Try again shortly.'});
+  return marketAtomic(async()=>{
+   const action=String(body.action||'');
+   if(action!=='sell')return reply(res,400,{error:'Unknown vendor action'});
+   const kind=String(body.kind||'');
+   if(kind==='material'){
+    const key=String(body.key||''),qty=body.qty;
+    if(!Object.hasOwn(VENDOR_PRICES,key)||!Number.isSafeInteger(qty)||qty<1||qty>1000)return reply(res,400,{error:'Invalid material or quantity'});
+    rec.materials??={};
+    if((rec.materials[key]||0)<qty)return reply(res,409,{error:'You do not own that many'});
+    rec.materials[key]-=qty;rec.gold=(rec.gold||0)+VENDOR_PRICES[key]*qty;
+   }else if(kind==='weapon'){
+    const id=String(body.id||'');
+    const i=(rec.weapons||[]).findIndex(w=>w.id===id);
+    if(i<0)return reply(res,404,{error:'Weapon not owned'});
+    if(rec.equippedId===id)return reply(res,409,{error:'Unequip this weapon before selling it'});
+    const gain=weaponSellValue(rec.weapons[i]);
+    rec.weapons.splice(i,1);rec.gold=(rec.gold||0)+gain;
+   }else return reply(res,400,{error:'Unknown item kind'});
+   verified[auth.email]=rec;await persistRuns();return reply(res,200,{...view(),sold:true});
   });
  }
  if(route==='/api/auctions'){
@@ -522,7 +591,8 @@ http.createServer(async(req,res)=>{
  if(route==='/api/common-dungeon'){
   let rec=verified[auth.email]||{active:null,clears:0,gold:60,loot:[],materials:{},weapons:[],equippedId:null,companion:null,lastClear:0};
   rec.commonDungeon??={floor:1,run:null,completed:0,history:[]};rec.heroProgress??={xp:0,level:1,statPoints:0};const dungeon=rec.commonDungeon;
-  const view=()=>({floor:dungeon.floor,run:dungeon.run?{...dungeon.run,loot:(dungeon.run.loot||[]).filter(v=>v.found||v.claimed)}:null,completed:dungeon.completed,history:dungeon.history.slice(-12),gold:rec.gold,materials:rec.materials||{},hero:rec.heroProgress,party:rec.party?{active:rec.party.active.length,memorial:rec.party.memorial.length}:null,discoveries:(rec.discoveries||[]).slice(-12)});
+  const view=()=>({floor:dungeon.floor,run:dungeon.run?{...dungeon.run,loot:(dungeon.run.loot||[]).filter(v=>v.found||v.claimed)}:null,completed:dungeon.completed,history:dungeon.history.slice(-12),gold:rec.gold,materials:rec.materials||{},hero:rec.heroProgress,party:rec.party?{active:rec.party.active.length,memorial:rec.party.memorial.length}:null,discoveries:(rec.discoveries||[]).slice(-12),
+   expectedRewards:{floor:dungeon.floor,gold:dungeon.floor===10?85:5+dungeon.floor*2,xp:10+dungeon.floor*6+(dungeon.floor===10?45:0),material:dungeon.floor>6?'Crystal Shard':'Iron Fragment',caches:'Hidden caches may hold bonus gold and extra materials',repeatable:true}});
   if(req.method==='GET')return reply(res,200,view());
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   const action=String(body.action||'');
