@@ -1,0 +1,12 @@
+{
+  "name": "the-nullborn-playtest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --check server.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
