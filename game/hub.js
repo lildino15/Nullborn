@@ -366,21 +366,33 @@ function renderBattle(){
       (run.special?'<b>Sanctuary encounter</b> — no losses if you fall.<br>':'')+
       (telegraph?'<b>Warning:</b> '+esc(telegraph.name)+' is charging an attack! Move or Guard.':'');
   }else banner.hidden=true;
+  renderTurnOrder(run);
   // grid
   const grid=$('#battle-grid');grid.style.gridTemplateColumns='repeat('+N+',1fr)';
   const walls=new Set((run.walls||[]).map(w=>w.x+','+w.y));
   const occ=battleOcc(run);
   const mv=new Set(H.battle.moveTiles.map(t=>t.x+','+t.y));
+  // threat tiles: show selected foe's attack range in red (Wartales-style)
+  const threat=new Set();
+  const selFoe=H.battle.sel&&H.battle.sel.kind==='foe'?(run.enemies||[]).find(e=>e.id===H.battle.sel.id&&e.hp>0):null;
+  if(selFoe){
+    const r=(selFoe.type==='Spirit'||String(selFoe.name).includes('Wisp'))?3:1;
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      const d=Math.abs(dx)+Math.abs(dy);if(!d||d>r)continue;
+      const nx=selFoe.x+dx,ny=selFoe.y+dy;
+      if(nx>=0&&ny>=0&&nx<N&&ny<N&&!walls.has(nx+','+ny))threat.add(nx+','+ny);
+    }
+  }
   let html='';
   for(let y=0;y<N;y++)for(let x=0;x<N;x++){
     const k=x+','+y,o=occ.get(k),w=walls.has(k);
-    let cls='cell'+(w?' wall':'')+(mv.has(k)?' move-hl':'');
+    let cls='cell'+(w?' wall':'')+(mv.has(k)?' move-hl':'')+(threat.has(k)?' atk-hl':'');
     let cellStyle=w?' style="background-image:url(\''+WALL_TILES[(x*3+y*7)%3]+'\');background-size:cover"':'';
     let inner='';
     if(o){
-      if(o.kind==='hero')inner='<div class="tok hero sprimg"><img src="'+HERO_SPRITE+'" alt="Hero"></div>';
-      else if(o.kind==='ally'){const dead=o.ref.hp<=0;const img=ALLY_SPRITES[o.ref.name]||SPR+'spr-rin.webp';inner='<div class="tok ally sprimg" style="'+(dead?'filter:grayscale(1);opacity:.5':'')+'"><img src="'+img+'" alt="'+esc(o.ref.name)+'"></div>'}
-      else if(o.kind==='foe'){inner='<div class="tok '+(o.ref.boss?'boss':'foe')+' sprimg"><img src="'+foeSprite(o.ref.name)+'" alt="'+esc(o.ref.name)+'"></div><div class="hp-mini"><i style="width:'+Math.round(100*o.ref.hp/o.ref.maxHp)+'%"></i></div>'}
+      if(o.kind==='hero'){const pct=run.heroMaxHp?Math.max(0,Math.round(100*run.heroHp/run.heroMaxHp)):0;inner='<div class="tok hero sprimg"><img src="'+HERO_SPRITE+'" alt="Hero"></div><div class="active-diamond">◆</div><div class="hp-mini ally"><i style="width:'+pct+'%"></i></div>'}
+      else if(o.kind==='ally'){const dead=o.ref.hp<=0;const img=ALLY_SPRITES[o.ref.name]||SPR+'spr-rin.webp';const pct=o.ref.maxHp?Math.max(0,Math.round(100*o.ref.hp/o.ref.maxHp)):0;inner='<div class="tok ally sprimg" style="'+(dead?'filter:grayscale(1);opacity:.5':'')+'"><img src="'+img+'" alt="'+esc(o.ref.name)+'"></div><div class="hp-mini ally"><i style="width:'+pct+'%"></i></div>'}
+      else if(o.kind==='foe'){inner='<div class="tok '+(o.ref.boss?'boss':'foe')+' sprimg"><img src="'+foeSprite(o.ref.name)+'" alt="'+esc(o.ref.name)+'"></div><div class="hp-mini foe"><i style="width:'+Math.round(100*o.ref.hp/o.ref.maxHp)+'%"></i></div>'}
       if(H.battle.sel&&((H.battle.sel.kind==='hero'&&o.kind==='hero')||(H.battle.sel.kind!=='hero'&&o.ref&&H.battle.sel.id===o.ref.id)))cls+=' sel';
     }
     const loot=(run.loot||[]).find(l=>!l.claimed&&l.found&&l.x===x&&l.y===y);
@@ -406,6 +418,30 @@ function renderBattle(){
   renderEnemyPanel(run);
 }
 function setHp(bar,text,hp,max){const p=max?Math.max(0,Math.round(100*hp/max)):0;$(bar).style.width=p+'%';$(text).textContent=hp+'/'+max}
+/* Turn-order avatar bar: hero + allies (blue) then foes (red), diamond on the active unit */
+function renderTurnOrder(run){
+  const el=$('#turn-order');if(!el)return;
+  const units=[{kind:'hero',name:H.saveName||'Rook',img:'/art/hub/hub-rook.webp',hp:run.heroHp,max:run.heroMaxHp,active:true}];
+  (run.allies||[]).forEach(a=>units.push({kind:'ally',name:a.name,img:((RECRUIT_STYLE[a.name]||{}).img||'/art/hub/hub-rook.webp'),hp:a.hp,max:a.maxHp}));
+  (run.enemies||[]).filter(e=>e.hp>0).forEach(e=>units.push({kind:'foe',name:e.name,img:foeSprite(e.name),hp:e.hp,max:e.maxHp}));
+  let html='';
+  units.forEach((u,i)=>{
+    const pct=u.max?Math.max(0,Math.round(100*u.hp/u.max)):0;
+    const col=u.kind==='foe'?'#e5484d':'#3d9bdc';
+    html+=(i?'<span class="to-arrow">›</span>':'')+
+      '<div class="to-unit'+(u.kind==='foe'?' foe':'')+(u.active?' active':'')+'" title="'+esc(u.name)+'">'+
+      '<img src="'+u.img+'" alt="'+esc(u.name)+'">'+
+      '<div class="to-hp"><i style="width:'+pct+'%;background:'+col+'"></i></div></div>';
+  });
+  el.innerHTML=html;
+}
+const ACTION_DESC={
+  attack:'Attack — Deal physical damage to a target within range. Tap an enemy to see the forecast.',
+  rune:'Fire Rune — Hurl searing flame at a foe within 3 tiles.',
+  items:'Items — Quaff a potion to restore HP.',
+  guard:'Guard — Brace for impact. Reduces incoming damage until your next move.'
+};
+function setActionDesc(k){const el=$('#action-desc');if(el)el.textContent=ACTION_DESC[k]||''}
 function renderEnemyPanel(run){
   const sel=H.battle.sel,ep=$('#enemy-panel');
   const foe=sel&&sel.kind==='foe'?(run.enemies||[]).find(e=>e.id===sel.id&&e.hp>0):null;
@@ -500,10 +536,10 @@ async function doAction(action,targetId,x,y){
     renderBattle();
   }catch(e){toast(e.message);renderBattle()}
 }
-$('#ba-attack').addEventListener('click',()=>{H.battle.sel={kind:'hero'};toast('Tap an enemy to see the forecast.');renderBattle()});
-$('#ba-rune').addEventListener('click',()=>{H.battle.sel={kind:'hero'};toast('Tap an enemy — Fire Rune strikes at range 3.');renderBattle()});
-$('#ba-items').addEventListener('click',()=>doAction('potion'));
-$('#ba-guard').addEventListener('click',()=>doAction('guard'));
+$('#ba-attack').addEventListener('click',()=>{H.battle.sel={kind:'hero'};setActionDesc('attack');toast('Tap an enemy to see the forecast.');renderBattle()});
+$('#ba-rune').addEventListener('click',()=>{H.battle.sel={kind:'hero'};setActionDesc('rune');toast('Tap an enemy — Fire Rune strikes at range 3.');renderBattle()});
+$('#ba-items').addEventListener('click',()=>{setActionDesc('items');doAction('potion')});
+$('#ba-guard').addEventListener('click',()=>{setActionDesc('guard');doAction('guard')});
 $('#btn-retreat').addEventListener('click',async()=>{
   if(!confirm('Retreat from this floor?'))return;
   try{await api.post('/api/common-dungeon',{action:'retreat'});openDungeon()}catch(e){toast(e.message)}
