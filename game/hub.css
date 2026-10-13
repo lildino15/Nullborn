@@ -118,7 +118,7 @@ input[type=email],input[type=password]{width:100%;background:#0a0c14;border:1px 
 #btn-retreat{margin-left:auto}
 .boss-banner{margin:8px 12px 0;padding:10px 12px;background:#3a1418;border:1px solid #e5484d;border-radius:10px;font-size:13px;color:#ffc9c9}
 .battle-stage{position:relative;margin:8px 12px 0;border:1px solid var(--gold-dim);border-radius:12px;overflow:hidden}
-.battle-bg{position:absolute;inset:0;background:url('/art/anime-battle.webp') center/cover no-repeat;filter:brightness(.55) saturate(1.1)}
+.battle-bg{position:absolute;inset:0;background:url('/art/hub/battle-bg-ruins.webp') center/cover no-repeat;filter:brightness(.55) saturate(1.1)}
 .battle-grid{position:relative;display:grid;gap:2px;padding:8px;aspect-ratio:1;touch-action:manipulation}
 .cell{border-radius:4px;background:#ffffff08;border:1px solid #ffffff10;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:0}
 .cell.wall{background:#05060acc;border-color:#000}
