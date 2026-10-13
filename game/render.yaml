@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: game
-    buildCommand: npm install --omit=dev
+    buildCommand: echo "no install needed - pg is only imported when DATABASE_URL is set"
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
