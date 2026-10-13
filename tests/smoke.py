@@ -19,12 +19,13 @@ try:
  api('/api/auth/register',{'email':'smoke@example.com','password':'test-password-123'})
  for floor in range(1,11):
   d=api('/api/common-dungeon',{'action':'enter'});r=d['run'];assert r['floor']==floor
-  assert all(0<=w['x']<7 and 0<=w['y']<7 for w in r['walls'])
+  ms=r.get('mapSize',7)
+  assert all(0<=w['x']<ms and 0<=w['y']<ms for w in r['walls'])
   blocked={(w['x'],w['y']) for w in r['walls']}; start=(r['heroX'],r['heroY']); seen={start}; todo=[start]
   for x,y in todo:
    for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:
     n=(x+dx,y+dy)
-    if 0<=n[0]<7 and 0<=n[1]<7 and n not in blocked and n not in seen:seen.add(n);todo.append(n)
+    if 0<=n[0]<ms and 0<=n[1]<ms and n not in blocked and n not in seen:seen.add(n);todo.append(n)
   assert all((e['x'],e['y']) in seen for e in r['enemies']),f'unreachable enemy floor {floor}'
   # Retry encounters on defeat; this verifies progression is reachable under the actual combat rules.
   for attempt in range(25):
@@ -37,7 +38,7 @@ try:
     else:
      occupied={(e['x'],e['y']) for e in live}|blocked|{(a['x'],a['y']) for a in r['allies'] if a['hp']>0}
      opts=[(r['heroX']+dx,r['heroY']+dy) for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]]
-     opts=[(x,y) for x,y in opts if 0<=x<7 and 0<=y<7 and (x,y) not in occupied]
+     opts=[(x,y) for x,y in opts if 0<=x<ms and 0<=y<ms and (x,y) not in occupied]
      if opts:
       x,y=min(opts,key=lambda xy:abs(xy[0]-target['x'])+abs(xy[1]-target['y']))
       payload={'action':'move','runId':r['id'],'x':x,'y':y}
