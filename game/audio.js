@@ -1,0 +1,13 @@
+(()=>{let ctx,master,playing=false,timer=null,step=0,enabled=localStorage.getItem('nullbornAudio')==='on';
+const notes=[146.83,174.61,220,261.63,196,174.61,130.81,146.83];
+function init(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.12;master.connect(ctx.destination)}if(ctx.state==='suspended')ctx.resume()}
+function tone(freq,duration=.18,type='sine',volume=.12,when=0){if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+when;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.001,volume),t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(master);o.start(t);o.stop(t+duration+.04)}
+function beat(){if(!playing||!ctx)return;const f=notes[step%notes.length];tone(f,.48,'triangle',.20);if(step%4===0)tone(f/2,.85,'sine',.24);if(step%2===0)tone(f*1.5,.22,'sine',.07,.11);step++}
+function play(){init();if(playing)return;playing=true;beat();timer=setInterval(beat,600)}
+function stop(){playing=false;clearInterval(timer);timer=null}
+function effect(kind){if(!enabled)return;init();if(kind==='hit'){tone(110,.12,'sawtooth',.20);tone(73,.2,'triangle',.15,.06)}else if(kind==='victory'){[261.6,329.6,392,523.25].forEach((n,i)=>tone(n,.35,'triangle',.18,i*.12))}else if(kind==='hurt'){tone(180,.2,'square',.08);tone(105,.25,'sine',.14,.09)}else if(kind==='click'){tone(523,.07,'sine',.06)}else tone(392,.14,'triangle',.12)}
+function toggle(){enabled=!enabled;localStorage.setItem('nullbornAudio',enabled?'on':'off');enabled?play():stop();update()}
+function update(){let b=document.getElementById('sound-toggle');if(b)b.textContent=enabled?'♫ Sound on':'♪ Sound off'}
+window.NullbornAudio={effect,toggle,play:()=>{if(enabled)play()},stop};
+document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='sound-toggle';b.type='button';b.setAttribute('aria-label','Toggle original soundtrack and sound effects');b.style.cssText='position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));right:12px;z-index:99;background:#251c42;color:#fff;border:1px solid #b29ae5;border-radius:22px;padding:12px 16px;font:600 14px system-ui;box-shadow:0 4px 20px #0008';b.onclick=toggle;document.body.appendChild(b);update();document.addEventListener('click',e=>{if(e.target.closest('button,a')&&e.target!==b)effect('click')});});
+})();

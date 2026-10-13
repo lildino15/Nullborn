@@ -1,0 +1,19 @@
+/* v4.7 anime RPG presentation, extracted from original approved concept */
+body{background:#080c16;color:#eae7e3}
+.nb-hero{background-image:linear-gradient(90deg,rgba(5,8,16,.9),rgba(5,8,16,.28)),url('/art/anime-title.webp')!important;background-size:cover!important;background-position:center 38%!important;min-height:270px!important}
+.nb-hero h1,.nb-hero p{text-shadow:0 3px 12px #000}
+.anime-dialogue{display:flex;align-items:stretch;background:#0c111beF;border:1px solid #a08a63;border-radius:12px;overflow:hidden;margin:16px 0;box-shadow:0 12px 35px #0008}
+.anime-dialogue img{width:35%;max-width:185px;object-fit:cover;object-position:30% 28%;min-height:125px}
+.anime-dialogue div{padding:14px;align-self:center}.anime-dialogue strong{color:#f4d79b;font:22px Georgia,serif}.anime-dialogue p{line-height:1.5;margin:7px 0}
+.arena{background:linear-gradient(#0006,#0005),url('/art/anime-dungeon.webp') center/cover!important;border:5px solid #3e3938;border-radius:12px;padding:7px;gap:2px!important;box-shadow:inset 0 0 40px #000,0 15px 35px #0009;aspect-ratio:1}
+.tile{border-radius:2px!important;background:linear-gradient(130deg,#55504b85,#1d2125c9)!important;border:1px solid #81786a60!important;overflow:hidden}
+.tile:nth-child(odd){background:linear-gradient(130deg,#655e5588,#171e27b8)!important}
+.tile.wall{background:linear-gradient(135deg,#282e35,#12171f)!important;border:2px solid #4d5358!important;box-shadow:inset 2px 3px 0 #72757670,inset -4px -5px 9px #030507!important;cursor:not-allowed}
+.wall-rock{display:block;width:94%;height:94%;background:linear-gradient(150deg,#747474 0%,#42474b 20%,#252c32 62%,#14181c 100%);clip-path:polygon(8% 14%,38% 1%,83% 12%,99% 45%,83% 91%,35% 99%,0 73%);box-shadow:inset 0 0 9px #080a0c}
+.tile.hero{border:2px solid #80caff!important;box-shadow:inset 0 0 13px #308aff88!important}.tile.ally{border:2px solid #a5e6c0!important}.tile.enemy{border:2px solid #df7d7d!important}
+.tile.selected{outline:3px solid #f3d48a!important}.tile.moveable{box-shadow:inset 0 0 12px #2b96d7a8!important;border-color:#6ac7fa!important}
+.tile .unit-sprite{width:95%!important;height:76%!important;object-fit:cover!important;object-position:center 30%;border-radius:5px;filter:drop-shadow(0 2px 3px #000)}
+.tile small{background:#05080cba;padding:2px 3px;border-radius:3px;z-index:2;color:#fff}
+.actions button{background:linear-gradient(#1e2b3a,#101620)!important;border:1px solid #b6a077!important;box-shadow:inset 0 1px #ffffff22}
+.anime-gallery{margin:20px auto 90px;padding:20px;max-width:1000px;background:#0b111cf0;border:1px solid #75654c;border-radius:18px}.anime-gallery h2{font:30px Georgia,serif;color:#e8d2a3}.anime-panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.anime-panels img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #73684f;border-radius:10px}.anime-cta{display:inline-block;margin-top:18px;padding:12px 24px;background:#25364a;border:1px solid #ddc18c;border-radius:8px;color:#f3e5ce;text-decoration:none}
+@media(max-width:520px){.anime-panels{grid-template-columns:1fr 1fr}.anime-panels img:first-child{grid-column:span 2;aspect-ratio:16/9}.anime-dialogue img{width:37%}.arena{padding:3px!important;gap:1px!important}}

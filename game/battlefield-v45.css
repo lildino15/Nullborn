@@ -1,0 +1,31 @@
+/* v4.5 illustrated tactical arena */
+:root{--stone:#232a39;--stone-light:#374354;--rune:#a6d6e5}
+body:has(.arena){background:radial-gradient(ellipse at 50% 3%,#4b3658 0%,#171b30 45%,#090d19 100%)}
+body:has(.arena) .nb-hero{position:relative;overflow:hidden;box-shadow:0 12px 35px #0008}
+body:has(.arena) .nb-hero:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 84% 34%,#e4a05b2e,transparent 32%);pointer-events:none}
+.arena{position:relative;padding:7px;border:3px solid #6d625e;border-radius:15px;gap:3px!important;background:radial-gradient(circle at 15% 12%,#a9b8a91a,transparent 38%),radial-gradient(circle at 90% 80%,#c48d4b1a,transparent 35%),#121b26;box-shadow:inset 0 0 0 3px #202636,inset 0 0 35px #020711,0 15px 35px #0008;overflow:hidden}
+.arena:before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 0% 0%,#ffc77730,transparent 27%),radial-gradient(circle at 100% 0%,#ffc77722,transparent 27%);z-index:1}
+.arena .tile{border:1px solid #54607399;border-radius:3px;background:linear-gradient(130deg,#ffffff0b 0 2%,transparent 3% 85%,#030b19a1 86%),repeating-linear-gradient(32deg,transparent 0 15px,#c9d5d90a 16px 17px,transparent 18px 33px),linear-gradient(155deg,#394554,#252f3e 52%,#202837);box-shadow:inset 0 1px 0 #dce8f020,inset 1px 0 0 #ffffff09,inset -2px -3px 5px #02081380;overflow:visible;min-width:0;touch-action:manipulation}
+.arena .tile:nth-child(9n+3){background-color:#33423e;background-image:radial-gradient(ellipse at 25% 70%,#5a745444 0 12%,transparent 30%),linear-gradient(155deg,#394554,#252f3e 52%,#202837)}
+.arena .tile:nth-child(11n+7):after{content:'✧';position:absolute;left:6%;bottom:8%;font-size:clamp(6px,1.4vw,11px);color:#c1d8db24;pointer-events:none}
+.arena .tile.hero{border:2px solid #8ccfff;box-shadow:inset 0 0 16px #5e91b233,0 0 12px #69d4ff45}
+.arena .tile.ally{border:2px solid #8dd8b6;box-shadow:inset 0 0 15px #6fca9b2c}
+.arena .tile.enemy{border:2px solid #b56a77;box-shadow:inset 0 0 14px #d9676530}
+.arena .tile.selected{outline:3px solid #f8dc96;outline-offset:-2px;z-index:2}
+.arena .tile.moveable{border:1px dashed #83cde8;box-shadow:inset 0 0 10px #6dbbdb22}
+.arena .tile .unit-sprite{width:110%;height:88%;max-height:100%;filter:drop-shadow(0 5px 2px #050811b9) drop-shadow(0 0 4px #cbd8e133);transform-origin:50% 80%;z-index:1}
+.arena .tile.hero .unit-sprite{filter:drop-shadow(0 4px 3px #050811) drop-shadow(0 0 7px #8cddff)}
+.arena .tile.enemy.charging{animation:warning .7s ease-in-out infinite alternate}
+.arena .tile small{position:absolute;bottom:0;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:clamp(7px,1.6vw,11px);background:#0b1025dc;border:1px solid #a7b7cc55;padding:1px 4px;border-radius:5px;z-index:2}
+.arena .tile:not(.hero):not(.ally):not(.enemy){color:#b3c4d230;font-size:12px}
+.arena .tile.enemy .unit-sprite{animation:enemy-prowl 2.7s ease-in-out infinite}
+.arena .tile.hero .unit-sprite{animation:hero-ready 2.2s ease-in-out infinite}
+.arena .tile.ally .unit-sprite{animation:hero-ready 2.6s ease-in-out infinite reverse}
+@keyframes enemy-prowl{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes hero-ready{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.035)}}
+.spell-burst{z-index:8!important;box-shadow:0 0 16px #ffac75}
+.spell-burst.void{box-shadow:0 0 22px #b581ff}
+.spell-burst.strike{box-shadow:none}
+.arena .tile.unit-hit{animation:impact-shake .36s linear}
+@keyframes impact-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}65%{transform:translateX(-2px)}}
+@media(prefers-reduced-motion:reduce){.arena .tile .unit-sprite,.arena .tile.unit-hit{animation:none!important}}
