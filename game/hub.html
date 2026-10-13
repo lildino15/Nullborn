@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0e18">
+<title>Nullborn: The rise of the forgotten</title>
+<link rel="stylesheet" href="/hub.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <section id="screen-title" class="screen active">
+    <div class="title-art"></div>
+    <div class="title-veil"></div>
+    <div class="title-block">
+      <div class="title-kicker">THE</div>
+      <h1 class="game-title">Nullborn:<br><span class="game-sub">The rise of the forgotten</span></h1>
+      <p class="tagline">No past. No name. A future to earn.</p>
+      <button id="btn-start" class="btn-gold btn-big">Tap to Start</button>
+    </div>
+  </section>
+
+  <!-- AUTH -->
+  <section id="screen-auth" class="screen">
+    <div class="auth-card panel">
+      <h2 class="serif gold-text">Enter Elyndra</h2>
+      <p class="muted">Sign in to your game server to save your journey.</p>
+      <div class="tabs" id="auth-tabs">
+        <button class="tab active" data-authtab="login">Sign In</button>
+        <button class="tab" data-authtab="register">New Account</button>
+      </div>
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="email">
+      <input id="auth-pass" type="password" placeholder="Password (10+ characters)" autocomplete="current-password">
+      <button id="btn-auth-go" class="btn-gold btn-big">Sign In</button>
+      <p id="auth-err" class="err"></p>
+    </div>
+  </section>
+
+  <!-- TOWN HUB -->
+  <section id="screen-town" class="screen">
+    <header class="topbar">
+      <div class="tb-loc"><span class="tb-shield">✦</span> Ravenford</div>
+      <div class="tb-cur"><span class="coin"></span><span id="tb-gold">0</span></div>
+      <div class="tb-cur"><span class="crystal"></span><span id="tb-crystal">0</span></div>
+      <button id="btn-settings" class="icon-btn" aria-label="Settings">⚙</button>
+    </header>
+    <div class="town-wrap">
+      <div class="town-art"></div>
+      <nav class="side-menu">
+        <button class="menu-btn" data-go="recruit"><span class="menu-ico">🛡</span>Guild<span class="menu-badge" id="badge-guild" hidden>!</span></button>
+        <button class="menu-btn" data-go="blacksmith"><span class="menu-ico">⚒</span>Blacksmith</button>
+        <button class="menu-btn" data-go="inventory"><span class="menu-ico">🎒</span>Inventory</button>
+        <button class="menu-btn" data-go="quests"><span class="menu-ico">📜</span>Quests</button>
+        <button class="menu-btn" data-go="relations"><span class="menu-ico">♥</span>Bonds</button>
+        <button class="menu-btn" data-go="types"><span class="menu-ico">☯</span>Types</button>
+      </nav>
+      <div class="town-greet panel">
+        <div class="greet-name" id="town-heroname">Adventurer</div>
+        <div class="greet-sub" id="town-herosub">Lv. 1 · The Nullborn</div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="bnav-btn" data-go="prepare"><span class="bnav-ico">⚔</span>Prepare</button>
+      <button class="bnav-btn primary" data-go="dungeon"><span class="bnav-ico">🏰</span>Dungeon</button>
+      <button class="bnav-btn" data-go="rest"><span class="bnav-ico">🛏</span>Rest</button>
+    </nav>
+  </section>
+
+  <!-- RECRUIT -->
+  <section id="screen-recruit" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Recruit Companions</h2></header>
+    <div id="recruit-list" class="card-list"></div>
+    <p class="foot-note">New companions can be recruited at the Guild.</p>
+  </section>
+
+  <!-- BLACKSMITH -->
+  <section id="screen-blacksmith" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Blacksmith</h2></header>
+    <div class="tabs" id="bs-tabs">
+      <button class="tab active" data-bstab="upgrade">Upgrade</button>
+      <button class="tab" data-bstab="forge">Forge</button>
+      <button class="tab" data-bstab="refine">Refine</button>
+      <button class="tab" data-bstab="repair">Repair</button>
+    </div>
+    <div id="bs-content"></div>
+  </section>
+
+  <!-- INVENTORY -->
+  <section id="screen-inventory" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Inventory</h2></header>
+    <div class="tabs" id="inv-tabs">
+      <button class="tab active" data-invtab="all">All</button>
+      <button class="tab" data-invtab="weapons">Weapons</button>
+      <button class="tab" data-invtab="armor">Armor</button>
+      <button class="tab" data-invtab="items">Items</button>
+      <button class="tab" data-invtab="key">Key Items</button>
+    </div>
+    <div id="inv-vendorbar" class="vendorbar" hidden></div>
+    <div id="inv-grid" class="inv-grid"></div>
+    <div class="inv-foot"><span id="inv-count">0/60</span><button id="btn-sort" class="btn-ghost">⇅ Sort</button></div>
+  </section>
+
+  <!-- RELATIONSHIPS -->
+  <section id="screen-relations" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif"><span class="heart">♥</span> Relationships</h2></header>
+    <div id="rel-list" class="card-list"></div>
+    <p class="foot-note">Spend time together on missions to grow your bonds and unlock special conversations.</p>
+  </section>
+
+  <!-- DUNGEON SELECT -->
+  <section id="screen-dungeon" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Forest Ruins</h2></header>
+    <div class="dungeon-card panel">
+      <div class="dungeon-art"></div>
+      <div class="dungeon-info">
+        <div class="drow"><span class="dlabel">Recommended Lv.</span><span id="dg-reclv" class="gold-text">3</span></div>
+        <div class="drow"><span class="dlabel">Deepest Floor</span><span id="dg-deep">0</span></div>
+        <div class="dlabel">Foes</div>
+        <div id="dg-foes" class="icon-row"></div>
+        <div class="dlabel">Possible Rewards</div>
+        <div id="dg-rewards" class="icon-row"></div>
+        <p class="dungeon-desc">An ancient ruin, overgrown with vegetation. Something moves in the shadows… Clear floors to earn gold, materials, weapons and experience.</p>
+        <button id="btn-enter-dungeon" class="btn-gold btn-big">Enter Dungeon</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TYPES -->
+  <section id="screen-types" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Types &amp; Strengths / Weaknesses</h2></header>
+    <div class="panel types-panel">
+      <svg id="elem-wheel" viewBox="0 0 340 300" aria-label="Elemental strengths wheel"></svg>
+      <div class="types-legend">
+        <div><span class="arrow-strong">➤</span> Stronger against</div>
+        <div><span class="arrow-weak">➤</span> Weaker against</div>
+      </div>
+      <div class="types-examples">
+        <p><b>Example:</b></p>
+        <p>Fire &gt; Wind</p><p>Wind &gt; Water</p><p>Water &gt; Fire</p>
+        <p>Light ⇄ Dark</p>
+        <p>Earth &gt; Storm</p>
+      </div>
+      <p class="muted small">Each unit and monster has a type. Strike weaknesses and guard against resistances to gain an edge in battle.</p>
+    </div>
+  </section>
+
+  <!-- BATTLE -->
+  <section id="screen-battle" class="screen">
+    <div class="battle-top">
+      <button class="back-btn" id="btn-battle-leave">‹</button>
+      <span id="turn-counter" class="turn-pill">Turn 0</span>
+      <span id="battle-floor" class="turn-pill">Floor 1</span>
+      <button id="btn-retreat" class="btn-ghost small">Retreat</button>
+    </div>
+    <div id="boss-banner" class="boss-banner" hidden></div>
+    <div class="battle-stage">
+      <div class="battle-bg"></div>
+      <div id="battle-grid" class="battle-grid"></div>
+    </div>
+    <div id="enemy-panel" class="unit-panel foe" hidden>
+      <div class="up-head"><span id="ep-name">—</span><span id="ep-lv" class="muted"></span></div>
+      <div class="hpbar"><div id="ep-hp" class="hp-fill"></div></div>
+      <div class="hp-text" id="ep-hptext"></div>
+      <div class="weakrow"><span>Weak <b id="ep-weak" class="weak">—</b></span><span>Strong <b id="ep-strong" class="strong">—</b></span></div>
+    </div>
+    <div id="forecast-panel" class="forecast panel" hidden></div>
+    <div class="unit-panel hero">
+      <img id="up-portrait" src="/art/hub/hub-rook.webp" alt="Hero">
+      <div class="up-info">
+        <div class="up-head"><span id="up-name">Rook</span></div>
+        <div class="up-sub"><span id="up-lv">Lv. 1</span> · <span id="up-class">The Nullborn</span></div>
+        <div class="hpbar"><div id="up-hp" class="hp-fill hero-hp"></div></div>
+        <div class="hp-text" id="up-hptext"></div>
+      </div>
+    </div>
+    <div class="battle-actions">
+      <button id="ba-attack" class="act-btn"><span class="act-ico">⚔</span>Attack</button>
+      <button id="ba-rune" class="act-btn"><span class="act-ico">🔥</span>Rune</button>
+      <button id="ba-items" class="act-btn"><span class="act-ico">🧪</span><span id="ba-potions">Items</span></button>
+      <button id="ba-guard" class="act-btn"><span class="act-ico">🛡</span>Guard</button>
+    </div>
+    <details class="battle-logwrap"><summary>Battle Log</summary><div id="battle-log" class="battle-log"></div></details>
+  </section>
+
+  <!-- DIALOGUE -->
+  <section id="screen-dialogue" class="screen">
+    <div class="dlg-art"></div>
+    <div class="dlg-box panel">
+      <div id="dlg-name" class="dlg-name">???</div>
+      <p id="dlg-text"></p>
+      <button id="dlg-next" class="dlg-next" aria-label="Continue">»</button>
+    </div>
+    <button id="dlg-skip" class="btn-ghost small dlg-skip">Skip</button>
+  </section>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="/hub.js" defer></script>
+</body>
+</html>
