@@ -161,8 +161,12 @@ function heroFaceHTML(ap){
   const iris=CC.eyeColors[ap.eyeColor]||'#3d9bdc';
   const irisBg='radial-gradient(circle,#0a0a0a 26%,'+iris+' 30%,'+iris+' 62%,transparent 72%)';
   let h='<img class="cc-layer" src="'+CC.base+'" alt="">';
-  h+='<img class="cc-layer cc-hair" src="/art/custom/cc-hair-'+ap.hairStyle+'.webp" alt="" style="filter:'+hf+'">';
-  if(ap.beard!=='none')h+='<img class="cc-layer cc-beard" src="/art/custom/cc-beard-'+ap.beard+'.webp" alt="" style="filter:'+hf+'">';
+  const hairMask='url(/art/custom/masks/cc-hair-'+ap.hairStyle+'-mask.png)';
+  h+='<img class="cc-layer cc-hair" src="/art/custom/cc-hair-'+ap.hairStyle+'.webp" alt="" style="filter:'+hf+';-webkit-mask-image:'+hairMask+';mask-image:'+hairMask+'">';
+  if(ap.beard!=='none'){
+    const beardMask='url(/art/custom/masks/cc-beard-'+ap.beard+'-mask.png)';
+    h+='<img class="cc-layer cc-beard" src="/art/custom/cc-beard-'+ap.beard+'.webp" alt="" style="filter:'+hf+';-webkit-mask-image:'+beardMask+';mask-image:'+beardMask+'">';
+  }
   h+='<img class="cc-layer cc-eyes" src="/art/custom/cc-eyes-'+ap.eyeShape+'.webp" alt="">';
   h+='<div class="cc-iris" style="left:37.5%;top:38%;background:'+irisBg+'"></div>';
   h+='<div class="cc-iris" style="left:62.5%;top:38%;background:'+irisBg+'"></div>';
