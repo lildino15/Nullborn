@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const H={email:null,status:null,profile:null,party:null,dungeon:null,saveName:null,crystals:0,vendor:null,
+const H={email:null,status:null,profile:null,party:null,dungeon:null,saveName:null,crystals:0,vendor:null,appearance:null,
   battle:{runId:null,sel:null,moveTiles:[],armed:false},invTab:'all',bsTab:'upgrade',bsWeapon:null,vendorMode:false};
 
 const api={
@@ -31,6 +31,7 @@ document.addEventListener('click',e=>{
   else if(to==='quests')openQuests();
   else if(to==='prepare')openPrepare();
   else if(to==='rest')openRest();
+  else if(to==='customize')openCustomize();
 });
 
 /* ---------- auth ---------- */
@@ -68,6 +69,7 @@ async function refreshTop(){
 }
 async function enterTown(){
   try{const s=await api.get('/api/save');H.saveName=(s.state&&s.state.name)||null}catch(e){}
+  try{const a=await api.get('/api/appearance');H.appearance=a.appearance}catch(e){}
   await refreshTop();show('screen-town');
   if(H.status&&!H.status.story&&!localStorage.getItem('hubPrologue'))startDialogue(true);
 }
@@ -142,6 +144,64 @@ function foeSprite(name){
   if(/golem|sentinel|construct/.test(n))return SPR+'spr-golem.webp';
   return SPR+'spr-wolf.webp';
 }
+/* ---------- character customization ---------- */
+const CC={
+  base:'/art/custom/cc-base.webp',
+  hairStyles:['short','long','messy','ponytail','buzz','mohawk'],
+  hairFilters:{black:'brightness(0.28)',brown:'sepia(0.9) hue-rotate(-25deg) saturate(1.5) brightness(0.62)',blonde:'sepia(0.55) saturate(2.4) hue-rotate(-8deg) brightness(1.22)',red:'sepia(1) hue-rotate(-42deg) saturate(2.4) brightness(0.85)',silver:'grayscale(0.85) brightness(1.42)',blue:'sepia(0.9) hue-rotate(175deg) saturate(2.2) brightness(0.9)'},
+  hairHex:{black:'#1c1c1c',brown:'#5a3a22',blonde:'#d9b36a',red:'#a83a22',silver:'#c9c9d2',blue:'#3d6bdc'},
+  eyeShapes:['sharp','round','narrow','wide'],
+  eyeColors:{brown:'#6b4226',blue:'#3d9bdc',green:'#3fae5a',amber:'#d99a2b',red:'#e5484d',violet:'#9b5de5'},
+  beards:['none','stubble','full','goatee','mustache','handlebar'],
+  defaults:{hairStyle:'messy',hairColor:'black',eyeShape:'sharp',eyeColor:'blue',beard:'none'}
+};
+function heroFaceHTML(ap){
+  ap={...CC.defaults,...(ap||{})};
+  const hf=CC.hairFilters[ap.hairColor]||'none';
+  const iris=CC.eyeColors[ap.eyeColor]||'#3d9bdc';
+  const irisBg='radial-gradient(circle,#0a0a0a 26%,'+iris+' 30%,'+iris+' 62%,transparent 72%)';
+  let h='<img class="cc-layer" src="'+CC.base+'" alt="">';
+  h+='<img class="cc-layer cc-hair" src="/art/custom/cc-hair-'+ap.hairStyle+'.webp" alt="" style="filter:'+hf+'">';
+  if(ap.beard!=='none')h+='<img class="cc-layer cc-beard" src="/art/custom/cc-beard-'+ap.beard+'.webp" alt="" style="filter:'+hf+'">';
+  h+='<img class="cc-layer cc-eyes" src="/art/custom/cc-eyes-'+ap.eyeShape+'.webp" alt="">';
+  h+='<div class="cc-iris" style="left:37.5%;top:38%;background:'+irisBg+'"></div>';
+  h+='<div class="cc-iris" style="left:62.5%;top:38%;background:'+irisBg+'"></div>';
+  return h;
+}
+let CCSEL=null;
+async function openCustomize(){
+  show('screen-customize');
+  try{const j=await api.get('/api/appearance');H.appearance=j.appearance;CCSEL={...j.appearance}}catch(e){CCSEL={...CC.defaults}}
+  renderCustomize();
+}
+function ccOptRow(el,opts,cur,onPick,thumb){
+  $(el).innerHTML=opts.map(o=>{
+    const t=thumb(o);
+    return '<button class="cc-opt'+(o===cur?' sel':'')+'" data-v="'+o+'">'+t+'<span class="cc-opt-label">'+o+'</span></button>';
+  }).join('');
+  $(el).querySelectorAll('.cc-opt').forEach(b=>b.addEventListener('click',()=>{onPick(b.dataset.v);renderCustomize()}));
+}
+function ccSwatchRow(el,hexMap,cur,onPick){
+  $(el).innerHTML=Object.keys(hexMap).map(k=>'<button class="cc-swatch'+(k===cur?' sel':'')+'" data-v="'+k+'" title="'+k+'" style="background:'+hexMap[k]+'"></button>').join('');
+  $(el).querySelectorAll('.cc-swatch').forEach(b=>b.addEventListener('click',()=>{onPick(b.dataset.v);renderCustomize()}));
+}
+function renderCustomize(){
+  if(!CCSEL)CCSEL={...CC.defaults};
+  $('#cc-preview').innerHTML=heroFaceHTML(CCSEL);
+  ccOptRow('#cc-hairStyles',CC.hairStyles,CCSEL.hairStyle,v=>CCSEL.hairStyle=v,
+    s=>'<img src="/art/custom/cc-hair-'+s+'.webp" alt="'+s+'">');
+  ccSwatchRow('#cc-hairColors',CC.hairHex,CCSEL.hairColor,v=>CCSEL.hairColor=v);
+  ccOptRow('#cc-eyeShapes',CC.eyeShapes,CCSEL.eyeShape,v=>CCSEL.eyeShape=v,
+    s=>'<img src="/art/custom/cc-eyes-'+s+'.webp" alt="'+s+'">');
+  ccSwatchRow('#cc-eyeColors',CC.eyeColors,CCSEL.eyeColor,v=>CCSEL.eyeColor=v);
+  ccOptRow('#cc-beards',CC.beards,CCSEL.beard,v=>CCSEL.beard=v,
+    s=>s==='none'?'<img src="/art/custom/cc-base.webp" alt="none" style="filter:grayscale(1) brightness(0.6)">':'<img src="/art/custom/cc-beard-'+s+'.webp" alt="'+s+'">');
+}
+$('#cc-save').addEventListener('click',async()=>{
+  if(!CCSEL)return;
+  try{const j=await api.post('/api/appearance',CCSEL);H.appearance=j.appearance;toast('Appearance saved. Your hero wears the new look.')}
+  catch(e){toast(e.message)}
+});
 async function openRecruit(){
   show('screen-recruit');
   const list=$('#recruit-list');list.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading guild roster…</p>';
@@ -405,11 +465,11 @@ function renderBattle(){
   const sel=H.battle.sel;
   const ally=sel&&sel.kind==='ally'?(run.allies||[]).find(a=>a.id===sel.id):null;
   if(ally){
-    $('#up-portrait').src=((RECRUIT_STYLE[ally.name]||{}).img||'/art/hub/hub-rook.webp');
+    $('#up-portrait').innerHTML='<img class="cc-layer" src="'+((RECRUIT_STYLE[ally.name]||{}).img||'/art/hub/hub-rook.webp')+'" alt="">';
     $('#up-name').textContent=ally.name;$('#up-lv').textContent='Ally';$('#up-class').textContent=ally.role+' · acts on its own';
     setHp('#up-hp','#up-hptext',ally.hp,ally.maxHp);
   }else{
-    $('#up-portrait').src='/art/hub/hub-rook.webp';
+    $('#up-portrait').innerHTML=heroFaceHTML(H.appearance);
     $('#up-name').textContent=H.saveName||'Rook';$('#up-lv').textContent='Lv. '+(d.hero?.level||1);$('#up-class').textContent='The Nullborn';
     setHp('#up-hp','#up-hptext',run.heroHp,run.heroMaxHp);
   }
@@ -421,7 +481,7 @@ function setHp(bar,text,hp,max){const p=max?Math.max(0,Math.round(100*hp/max)):0
 /* Turn-order avatar bar: hero + allies (blue) then foes (red), diamond on the active unit */
 function renderTurnOrder(run){
   const el=$('#turn-order');if(!el)return;
-  const units=[{kind:'hero',name:H.saveName||'Rook',img:'/art/hub/hub-rook.webp',hp:run.heroHp,max:run.heroMaxHp,active:true}];
+  const units=[{kind:'hero',name:H.saveName||'Rook',face:true,hp:run.heroHp,max:run.heroMaxHp,active:true}];
   (run.allies||[]).forEach(a=>units.push({kind:'ally',name:a.name,img:((RECRUIT_STYLE[a.name]||{}).img||'/art/hub/hub-rook.webp'),hp:a.hp,max:a.maxHp}));
   (run.enemies||[]).filter(e=>e.hp>0).forEach(e=>units.push({kind:'foe',name:e.name,img:foeSprite(e.name),hp:e.hp,max:e.maxHp}));
   let html='';
@@ -430,7 +490,7 @@ function renderTurnOrder(run){
     const col=u.kind==='foe'?'#e5484d':'#3d9bdc';
     html+=(i?'<span class="to-arrow">›</span>':'')+
       '<div class="to-unit'+(u.kind==='foe'?' foe':'')+(u.active?' active':'')+'" title="'+esc(u.name)+'">'+
-      '<img src="'+u.img+'" alt="'+esc(u.name)+'">'+
+      (u.face?'<div class="cc-face">'+heroFaceHTML(H.appearance)+'</div>':'<img src="'+u.img+'" alt="'+esc(u.name)+'">')+
       '<div class="to-hp"><i style="width:'+pct+'%;background:'+col+'"></i></div></div>';
   });
   el.innerHTML=html;
