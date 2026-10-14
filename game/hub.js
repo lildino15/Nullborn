@@ -165,7 +165,7 @@ function heroFaceHTML(ap){
   h+='<img class="cc-layer cc-hair" src="/art/custom/cc-hair-'+ap.hairStyle+'.webp" alt="" style="filter:'+hf+';-webkit-mask-image:'+hairMask+';mask-image:'+hairMask+'">';
   if(ap.beard!=='none'){
     const beardMask='url(/art/custom/masks/cc-beard-'+ap.beard+'-mask.png)';
-    h+='<img class="cc-layer cc-beard" src="/art/custom/cc-beard-'+ap.beard+'.webp" alt="" style="filter:'+hf+';-webkit-mask-image:'+beardMask+';mask-image:'+beardMask+'">';
+    h+='<img class="cc-layer cc-beard" src="/art/custom/cc-beard-'+ap.beard+'.webp" alt="" style="-webkit-mask-image:'+beardMask+';mask-image:'+beardMask+'">';
   }
   h+='<img class="cc-layer cc-eyes" src="/art/custom/cc-eyes-'+ap.eyeShape+'.webp" alt="">';
   h+='<div class="cc-iris" style="left:37.5%;top:38%;background:'+irisBg+'"></div>';
