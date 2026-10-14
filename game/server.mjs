@@ -103,7 +103,7 @@ http.createServer(async(req,res)=>{
   const ext=route.split('.').pop();const type=ext==='html'?'text/html; charset=utf-8':ext==='js'?'text/javascript; charset=utf-8':ext==='svg'?'image/svg+xml':ext==='css'?'text/css; charset=utf-8':'application/manifest+json';
   res.writeHead(200,{'Content-Type':type,'Cache-Control':route==='/sw.js'?'no-cache':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return
  }
- if(req.method==='GET'&&/^\/art\/[a-z\-\/]+\.webp$/.test(route)){res.writeHead(200,{'Content-Type':'image/webp','Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
+ if(req.method==='GET'&&/^\/art\/[a-z\-\/]+\.(webp|png)$/.test(route)){const ctype=route.endsWith('.png')?'image/png':'image/webp';res.writeHead(200,{'Content-Type':ctype,'Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
  if(req.method==='GET'&&/^\/sprites\/[a-z-]+\.svg$/.test(route)){res.writeHead(200,{'Content-Type':'image/svg+xml','Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,route.slice(1))));return}
  if(req.method==='GET'&&route==='/market.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await readFile(path.join(ROOT,'market.html')));return}
  if(!route.startsWith('/api/'))return reply(res,404,{error:'Not found'});
