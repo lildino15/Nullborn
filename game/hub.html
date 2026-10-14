@@ -55,6 +55,7 @@
         <button class="menu-btn" data-go="quests"><span class="menu-ico">📜</span>Quests</button>
         <button class="menu-btn" data-go="relations"><span class="menu-ico">♥</span>Bonds</button>
         <button class="menu-btn" data-go="types"><span class="menu-ico">☯</span>Types</button>
+        <button class="menu-btn" data-go="customize"><span class="menu-ico">✦</span>Customize</button>
       </nav>
       <div class="town-greet panel">
         <div class="greet-name" id="town-heroname">Adventurer</div>
@@ -171,7 +172,7 @@
     </div>
     <div id="forecast-panel" class="forecast panel" hidden></div>
     <div class="unit-panel hero">
-      <img id="up-portrait" src="/art/hub/hub-rook.webp" alt="Hero">
+      <div id="up-portrait" class="cc-face cc-small"></div>
       <div class="up-info">
         <div class="up-head"><span id="up-name">Rook</span></div>
         <div class="up-sub"><span id="up-lv">Lv. 1</span> · <span id="up-class">The Nullborn</span></div>
@@ -187,6 +188,21 @@
     </div>
     <div id="action-desc" class="action-desc"></div>
     <details class="battle-logwrap"><summary>Battle Log</summary><div id="battle-log" class="battle-log"></div></details>
+  </section>
+
+  <!-- CUSTOMIZE -->
+  <section id="screen-customize" class="screen">
+    <header class="screen-head"><button class="back-btn" data-go="town">‹</button><h2 class="serif">Customize Hero</h2></header>
+    <div class="panel cc-panel">
+      <div id="cc-preview" class="cc-face cc-preview"></div>
+      <h3>Hair style</h3><div id="cc-hairStyles" class="cc-row"></div>
+      <h3>Hair color</h3><div id="cc-hairColors" class="cc-row"></div>
+      <h3>Eye shape</h3><div id="cc-eyeShapes" class="cc-row"></div>
+      <h3>Eye color</h3><div id="cc-eyeColors" class="cc-row"></div>
+      <h3>Beard</h3><div id="cc-beards" class="cc-row"></div>
+      <button id="cc-save" class="btn-gold btn-big" style="margin-top:14px;width:100%">Save Appearance</button>
+      <p class="muted small" style="text-align:center">Your hero's portrait updates everywhere — town, battle roster and unit panel.</p>
+    </div>
   </section>
 
   <!-- DIALOGUE -->
