@@ -567,6 +567,18 @@ http.createServer(async(req,res)=>{
   }else return reply(res,400,{error:'Unknown action'});
   verified[auth.email]=rec;await persistRuns();return reply(res,200,publicProfile());
  }
+ /* Hero appearance (character customization) */
+ const AP_DEFAULT={hairStyle:'messy',hairColor:'black',eyeShape:'sharp',eyeColor:'blue',beard:'none'};
+ const AP_VALID={hairStyle:['short','long','messy','ponytail','buzz','mohawk'],hairColor:['black','brown','blonde','red','silver','blue'],eyeShape:['sharp','round','narrow','wide'],eyeColor:['brown','blue','green','amber','red','violet'],beard:['none','stubble','full','goatee','mustache','handlebar']};
+ if(route==='/api/appearance'){
+  if(!user)return reply(res,401,{error:'Sign in first'});
+  let rec=verified[auth.email]||{};rec.appearance={...AP_DEFAULT,...(rec.appearance||{})};
+  if(req.method==='GET'){verified[auth.email]=rec;return reply(res,200,{appearance:rec.appearance})}
+  if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
+  const a={};
+  for(const k of Object.keys(AP_VALID)){const v=String(body[k]||'');if(!AP_VALID[k].includes(v))return reply(res,400,{error:'Invalid '+k});a[k]=v}
+  rec.appearance=a;verified[auth.email]=rec;await persistRuns();return reply(res,200,{appearance:a});
+ }
  if(route==='/api/party'){
   const rec=verified[auth.email]||{gold:60,materials:{},weapons:[],loot:[]};rec.party??={roster:[],memorial:[],active:[]};
   const options=[{name:'Rin',role:'Warrior',cost:35,hp:26,atk:5,skill:'Shield Break'},{name:'Orin',role:'Ranger',cost:45,hp:20,atk:6,skill:'Piercing Shot'},{name:'Selene',role:'Healer',cost:55,hp:22,atk:3,skill:'Healing Light'}];
